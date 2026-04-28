@@ -1,0 +1,46 @@
+import streamlit as st
+
+# Configuration Cylindre et Miroirs
+CYL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
+MIR = {6:9, 9:6, 16:19, 19:16, 26:29, 29:26, 12:21, 21:12, 13:31, 31:13, 23:32, 32:23}
+
+def get_v(n):
+    idx = CYL.index(n)
+    return [CYL[(idx + i) % 37] for i in range(-2, 3)]
+
+st.set_page_config(page_title="Sniper", layout="centered")
+st.title("🎯 SNIPER ROULETTE")
+
+if 'h' not in st.session_state: st.session_state.h = []
+
+# Saisie simplifiée
+num = st.number_input("Numéro sorti :", 0, 36, step=1, key="input")
+if st.button("CALCULER ZONE", use_container_width=True):
+    st.session_state.h.append(num)
+
+if len(st.session_state.h) >= 2:
+    hist = st.session_state.h
+    scores = {i: 0 for i in range(37)}
+    
+    # Logique suites & miroirs
+    diff = hist[-1] - hist[-2]
+    scores[(hist[-1] + diff) % 37] += 5 # Suite linéaire
+    
+    for n in hist[-5:]:
+        if n in MIR:
+            m = MIR[n]
+            scores[m] += 4 # Score Miroir
+            for v in get_v(m): scores[v] += 1 # Voisins miroir
+
+    pivot = max(scores, key=scores.get)
+    zone = get_v(pivot)
+    
+    # Affichage CHIRURGICAL pour mobile
+    st.success(f"### 📍 PIVOT : {pivot}")
+    st.warning(f"### 🎰 ZONE : {', '.join(map(str, zone))}")
+
+if st.button("RESET GAIN (+100€)", type="primary", use_container_width=True):
+    st.session_state.h = []
+    st.rerun()
+
+st.write("Parc avant :", st.session_state.h)
